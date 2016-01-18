@@ -2,9 +2,6 @@
 vagrant based development environment for mozreview.
 this is my work-in-progress repo.
 
-to install copy the contents of this repo into a 'vagrant' directory under your
-vct checkout (ie. this file should be version-control-tools/vagrant/README.md).
-
 reasons for doing this instead of from the existing docker based environment:
 - focused on a simple deployment strategy with a minimal number of moving parts
 - persistent data across upgrades/provisioning
@@ -19,6 +16,9 @@ non-goals:
 - developer environment for non-mozreview/reviewboard parts of vct
 
 installation:
+
+to install copy the contents of this repo into a 'vagrant' directory under your
+vct checkout (ie. this file should be version-control-tools/vagrant/README.md).
 
 optional: edit config.yml to set the ports
 run 'vagrant up'
