@@ -1,0 +1,67 @@
+---
+
+- name: install system packages
+  yum: name={{ item }}
+       state=installed
+  with_items:
+    - '"@Development tools"'
+    - ack
+    - apr-util-devel
+    - httpd
+    - libffi-devel
+    - libjpeg-turbo-devel
+    - libselinux-python
+    - libxml2-devel
+    - libxslt-devel
+    - memcached
+    - mercurial
+    - mod_wsgi
+    - MySQL-python
+    - ngrep
+    - nodejs
+    - npm
+    - openldap-devel
+    - openssl-devel
+    - python-devel
+    - python-pip
+    - python-virtualenv
+    - subversion-devel
+    - telnet
+    - tcpdump
+    - zlib-devel
+
+- name: check selinux setup
+  command: selinuxenabled
+  register: selinux_enabled
+  ignore_errors: true
+
+- name: disable selinux
+  selinux: state=disabled
+  when: selinux_enabled|success
+
+- name: disable selinx enforcement
+  command: setenforce 0
+  when: selinux_enabled|success
+
+- name: configure memcached
+  service: name=memcached
+           enabled=yes
+           state=started
+
+- name: configure httpd
+  service: name=httpd
+           enabled=yes
+           state=started
+
+- name: remove default httpd configs
+  file: path={{ item }} state=absent
+  with_items:
+    - /etc/httpd/conf.d/welcome.conf
+    - /etc/httpd/conf.d/README
+
+- name: install our default httpd config
+  copy: src=server.conf
+       dest=/etc/httpd/conf.d/server.conf
+
+- name: setup logging
+  file: path=/var/log/httpd mode=0755

@@ -1,0 +1,15 @@
+---
+- name: Setup Development Environment
+  hosts: all
+  become: yes
+  roles:
+    - { role: system-dependencies }
+    - { role: virtualenv,
+        venv: '/src/vagrant/venv' }
+    - { role: bmo,
+        bugzilla_port: '{{ BUGZILLA_PORT }}' }
+    - { role: ldap }
+    - { role: review-board,
+        venv: '/src/vagrant/venv',
+        reviewboard_port: '{{ REVIEWBOARD_PORT }}',
+        bugzilla_port: '{{ BUGZILLA_PORT }}' }

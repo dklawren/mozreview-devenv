@@ -1,0 +1,148 @@
+---
+
+- name: check for existing instance
+  stat: path=/bugzilla
+  ignore_errors: true
+  register: existing_bmo
+
+- name: create bugzilla user
+  user: name=bugzilla
+
+# cannot use the git module because it doesn't support all these options
+- name: clone bugzilla.mozilla.org
+  command: >
+    git
+    clone https://git.mozilla.org/webtools/bmo/bugzilla.git
+    --branch production
+    --single-branch
+    --depth 1
+    /bugzilla
+  args:
+    creates: /bugzilla
+
+# disable some extensions that we'll never need to reduce dependencies
+- name: disable extensions
+  file: path=/bugzilla/extensions/{{ item }}/disabled
+        state=touch
+  with_items:
+    - BmpConvert
+    - Push
+
+# bugzilla needs mysql 5.6 which we need to pull directly from mysql
+- name: install mysql repo
+  command: rpm -i http://repo.mysql.com/mysql-community-release-el7-5.noarch.rpm
+  args:
+    creates: /etc/yum.repos.d/mysql-community.repo
+
+- name: install mysql config
+  copy: src=my.cnf
+        dest=/etc/my.cnf
+
+- name: install system packages
+  yum: name={{ item }}
+       state=installed
+  with_items:
+    - mod_perl
+    - mysql-community-server
+    - perl-App-cpanminus
+    - perl-core
+    - perl-devel
+
+- name: install mysql
+  service: name=mysqld
+           enabled=yes
+           state=started
+
+# install perl modules from yum where available
+# this is much faster than using cpan, but still takes a while, so we only do
+# this during the first run.  cpanm will catch any new dependencies.
+- name: install perl packages
+  yum: name={{ item }}
+       state=installed
+  with_items:
+    # direct
+    - perl(Crypt::CBC)
+    - perl(Crypt::DES)
+    - perl(Crypt::DES_EDE3)
+    - perl(DateTime)
+    - perl(DBD::mysql)
+    - perl(Email::MIME)
+    - perl(Email::Send)
+    - perl(File::MimeInfo::Magic)
+    - perl(HTML::Parser)
+    - perl(HTML::Scrubber)
+    - perl(HTML::Tree)
+    - perl(Image::Magick)
+    - perl(IO::Scalar)
+    - perl(JSON)
+    - perl(JSON::RPC)
+    - perl(JSON::XS)
+    - perl(LWP::Protocol::https)
+    - perl(Math::Random::ISAAC)
+    - perl(Regexp::Common)
+    - perl(SOAP::Lite)
+    - perl(Template)
+    - perl(Test::Taint)
+    - perl(Tie::IxHash)
+    # indirect
+    - perl(AnyEvent)
+    - perl(Bytes::Random::Secure)
+    - perl(Class::Accessor::Fast)
+    - perl(Class::Data::Inheritable)
+    - perl(Crypt::DH)
+    - perl(Crypt::DSA)
+    - perl(Crypt::Rijndael)
+    - perl(Data::Buffer)
+    - perl(Digest::MD2)
+    - perl(Event)
+    - perl(ExtUtils::CChecker)
+    - perl(ExtUtils::PkgConfig)
+    - perl(File::HomeDir)
+    - perl(File::Slurp)
+    - perl(Sort::Versions)
+    - perl(Term::ReadLine::Gnu)
+    - perl(Test::Exception)
+    - perl(Test::Pod)
+    - perl(Test::SharedFork)
+    - perl(XMLRPC::Lite)
+  when: existing_bmo.stat.exists == false
+
+# use cpanm to install any modules not in the repo
+- name: create cpanfile
+  command: perl checksetup.pl --cpanfile
+  args:
+    chdir: /bugzilla
+
+- name: install perl modules
+  command: >
+    cpanm
+    --installdeps
+    --with-recommends
+    --skip-satisfied
+    --notest
+    --with-all-features
+    --without-feature auth_ldap
+    --without-feature auth_radius
+    --without-feature detect_charset
+    --without-feature documentation
+    --without-feature elasticsearch
+    --without-feature graphical_reports
+    --without-feature inbound_email
+    --without-feature memcached
+    --without-feature mfa
+    --without-feature moving
+    --without-feature new_charts
+    --without-feature old_charts
+    --without-feature oracle
+    --without-feature patch_viewer
+    --without-feature pg
+    --without-feature s3
+    --without-feature smtp_auth
+    --without-feature sqlite
+    --without-feature updates
+    .
+  args:
+    chdir: /bugzilla
+
+- name: cpanm cleanup
+  file: path=/root/.cpanm state=absent

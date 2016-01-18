@@ -1,0 +1,16 @@
+---
+
+- name: create virtualenv
+  command: virtualenv {{ venv }}
+           creates={{ venv }}/bin/python
+
+- name: create symlink
+  file: path=/venv
+        state=link
+        src={{ venv }}
+
+- name: upgrade pip
+  pip: virtualenv={{ venv }}
+       executable={{ venv }}/bin/pip
+       name=pip
+       state=latest

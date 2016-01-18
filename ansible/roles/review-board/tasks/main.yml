@@ -1,0 +1,11 @@
+---
+
+- include: dependencies.yml venv={{ venv }}
+# XXX ldap, autoland ports
+- include: >
+    deploy.yml
+    venv={{ venv }}
+    reviewboard_port={{ reviewboard_port }}
+    bugzilla_port={{ bugzilla_port }}
+    ldap_port=8082
+    autoland_port=8083

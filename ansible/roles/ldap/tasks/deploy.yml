@@ -1,0 +1,45 @@
+---
+
+- name: check for existing instance
+  stat: path=/ldap
+  ignore_errors: true
+  register: existing_ldap
+
+- name: remove example site
+  file: path=/etc/openldap/slapd.d
+        state=absent
+  when: existing_ldap.stat.exists == false
+
+- copy: src=etc/
+        dest=/etc/openldap
+        owner=ldap
+        group=ldap
+  when: existing_ldap.stat.exists == false
+
+- copy: src=schema/
+        dest=/etc/openldap/schema
+        owner=ldap
+        group=ldap
+  when: existing_ldap.stat.exists == false
+
+- file: path=/ldap
+        owner=ldap
+        group=ldap
+        state=directory
+
+- copy: src=mozilla.ldif
+        dest=/ldap/mozilla.ldif
+  when: existing_ldap.stat.exists == false
+
+- name: seed ldap repo
+  become_user: ldap
+  command: >
+    slapadd -v
+    -f /etc/openldap/slapd.conf
+    -l /ldap/mozilla.ldif
+  when: existing_ldap.stat.exists == false
+
+- name: configure slapd
+  service: name=slapd
+           enabled=yes
+           state=started

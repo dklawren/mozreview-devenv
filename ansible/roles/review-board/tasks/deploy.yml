@@ -1,0 +1,76 @@
+---
+
+- name: check for existing instance
+  stat: path=/reviewboard
+  ignore_errors: true
+  register: existing_rb
+
+- name: install httpd vhost config
+  copy: src=vhost.conf
+        dest=/etc/httpd/conf.d/reviewboard.conf
+  when: existing_rb.stat.exists == false
+
+- name: set httpd ports
+  command: sed -i 's/\$REVIEWBOARD_PORT\$/{{ reviewboard_port }}/g' /etc/httpd/conf.d/reviewboard.conf
+  when: existing_rb.stat.exists == false
+
+- name: install review board instance
+  command: >
+    "{{ venv }}/bin/rb-site" install
+    --noinput
+    --opt-out-support-data
+    --domain-name=example.com
+    --admin-user=admin+1
+    --admin-password=password
+    --admin-email=admin@example.com
+    --db-type=sqlite3
+    --db-name=/reviewboard/data/reviewboard.db
+    --cache-type=memcached
+    --cache-info=localhost:11211
+    --web-server-type=apache
+    --python-loader=wsgi
+    /reviewboard
+  when: existing_rb.stat.exists == false
+
+- name: install review board installation script
+  copy: src=install-reviewboard.py
+        dest=/reviewboard/install-reviewboard.py
+        mode=0755
+  when: existing_rb.stat.exists == false
+
+- name: configure review board
+  command: >
+    "{{ venv }}/bin/python" /reviewboard/install-reviewboard.py
+    --bugzilla_port={{ bugzilla_port }}
+  when: existing_rb.stat.exists == false
+
+- name: install extension media
+  command: "{{ venv }}/bin/rb-site manage /reviewboard install-extension-media -- --force"
+  when: existing_rb.stat.exists == false
+
+- name: link static assets
+  file: >
+    path=/reviewboard/htdocs/static/ext/{{ item.ext }}.extension.{{ item.class }}
+    src=/src/pylib/{{ item.ext }}/{{ item.ext }}/static
+    state=link
+  with_items:
+    - { ext: 'mozreview', class: 'MozReviewExtension' }
+    - { ext: 'rbmotd', class: 'MotdExtension' }
+
+# normally you'd log in to reviewboard as admin@example.com; this root account
+# is a fallback in case bugzilla backed authentication fails
+- name: create root account
+  shell: >
+    yes password |
+    {{ venv }}/bin/python {{ venv }}/bin/rb-site
+    manage /reviewboard/
+    createsuperuser -- --username=root --email=root@example.com
+  when: existing_rb.stat.exists == false
+
+- name: create log file
+  file: path=/var/log/httpd/reviewboard.log owner=reviewboard group=reviewboard state=touch
+
+- name: restart httpd
+  service: name=httpd
+           state=restarted
+  when: existing_rb.stat.exists == false

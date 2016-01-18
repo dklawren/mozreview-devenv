@@ -1,0 +1,97 @@
+---
+
+- name: check for existing instance
+  stat: path=/bugzilla/checksetup_answers.txt
+  ignore_errors: true
+  register: existing_bmo
+
+- name: install httpd vhost config
+  copy: src=vhost.conf
+        dest=/etc/httpd/conf.d/bugzilla.conf
+  when: existing_bmo.stat.exists == false
+
+- name: set httpd ports
+  command: sed -i 's/\$BUGZILLA_PORT\$/{{ bugzilla_port }}/g' /etc/httpd/conf.d/bugzilla.conf
+  when: existing_bmo.stat.exists == false
+
+- name: create checksetup_answers.txt
+  copy: src=checksetup_answers.txt
+        dest=/bugzilla/checksetup_answers.txt
+  when: existing_bmo.stat.exists == false
+
+- name: create set-param.pl
+  copy: src=set-param.pl
+        dest=/bugzilla/scripts/set-param.pl
+  when: existing_bmo.stat.exists == false
+
+- name: create mysql user
+  mysql_user: name=bugs
+              password=bugs
+              state=present
+              priv=bugs.*:ALL
+  when: existing_bmo.stat.exists == false
+
+- name: create mysql database
+  mysql_db: name=bugs
+            encoding=utf8
+            state=present
+  when: existing_bmo.stat.exists == false
+
+- name: checksetup (1/2)
+  command: perl checksetup.pl checksetup_answers.txt
+  args:
+      chdir: /bugzilla
+  when: existing_bmo.stat.exists == false
+
+- name: checksetup (2/2)
+  command: perl checksetup.pl checksetup_answers.txt
+  args:
+      chdir: /bugzilla
+  when: existing_bmo.stat.exists == false
+
+- name: generate bmo data
+  command: perl docker/generate_bmo_data.pl admin@example.com
+  args:
+      chdir: /bugzilla
+  when: existing_bmo.stat.exists == false
+
+- name: set mail_delivery_method
+  command: perl scripts/set-param.pl mail_delivery_method None
+  args:
+      chdir: /bugzilla
+  when: existing_bmo.stat.exists == false
+
+- name: set bugzilla_version
+  command: perl scripts/set-param.pl bugzilla_version BMO-MozReview
+  args:
+      chdir: /bugzilla
+  when: existing_bmo.stat.exists == false
+
+- name: set auth_delegation
+  command: perl scripts/set-param.pl auth_delegation 1
+  args:
+      chdir: /bugzilla
+  when: existing_bmo.stat.exists == false
+
+- name: set urlbase
+  command: perl scripts/set-param.pl urlbase http://localhost:{{ bugzilla_port }}/
+  args:
+      chdir: /bugzilla
+  when: existing_bmo.stat.exists == false
+
+- name: configure mozreview extension (1/2)
+  command: perl scripts/set-param.pl mozreview_base_url http://localhost:8080/
+  args:
+      chdir: /bugzilla
+  when: existing_bmo.stat.exists == false
+
+- name: configure mozreview extension (2/2)
+  command: perl scripts/set-param.pl mozreview_auth_callback_url http://localhost:8080/mozreview/bmo_auth_callback/
+  args:
+      chdir: /bugzilla
+  when: existing_bmo.stat.exists == false
+
+- name: restart httpd
+  service: name=httpd
+           state=restarted
+  when: existing_bmo.stat.exists == false

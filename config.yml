@@ -1,0 +1,7 @@
+# XXX document these
+REVIEWBOARD_PORT: 8080
+BUGZILLA_PORT: 8081
+
+# XXX document these as well
+VERBOSE: true
+FORWARD_LDAP: true

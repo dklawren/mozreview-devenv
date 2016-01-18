@@ -1,0 +1,25 @@
+---
+
+- name: install python dependencies
+  pip: virtualenv={{ venv }}
+       executable={{ venv }}/bin/pip
+       requirements=/src/test-requirements.txt
+
+- name: install python libs
+  command: "{{ venv }}/bin/python setup.py develop"
+  args:
+    chdir: /src/{{ item }}
+  with_items:
+    - pylib/mozautomation
+    - pylib/mozreview
+    - pylib/rbbz
+    - pylib/rbmotd
+# XXX may need to use easy_install as per docker-rbweb
+# XXX custom pygments (mozreview-virtualenv)
+
+- name: install node packages
+  command: npm install -g less uglify-js
+           creates=/usr/bin/lessc
+
+- name: create review board user
+  user: name=reviewboard
