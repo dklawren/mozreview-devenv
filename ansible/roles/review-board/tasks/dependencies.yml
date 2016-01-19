@@ -1,9 +1,18 @@
 ---
 
-- name: install python dependencies
+- name: install python runtime dependencies
   pip: virtualenv={{ venv }}
        executable={{ venv }}/bin/pip
        requirements=/src/test-requirements.txt
+
+# XXX things kinda exploded last time i tried this
+# i suspect this upgraded django, so we'll need to pin the version
+# - name: install python development dependencies
+#   pip: virtualenv={{ venv }}
+#        executable={{ venv }}/bin/pip
+#        name={{ item }}
+#   with_items:
+#     - django-debug-toolbar
 
 - name: install python libs
   command: "{{ venv }}/bin/python setup.py develop"

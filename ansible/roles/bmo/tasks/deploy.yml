@@ -55,6 +55,8 @@
       chdir: /bugzilla
   when: existing_bmo.stat.exists == false
 
+# XXX use with_items for the params
+
 - name: set mail_delivery_method
   command: perl scripts/set-param.pl mail_delivery_method None
   args:

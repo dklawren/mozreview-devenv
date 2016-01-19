@@ -19,15 +19,19 @@ def main(args):
         execfile(activate, dict(__file__=activate))
         sys.executable = os.path.join(HERE, 'venv', 'bin', 'python')
 
-    # XXX validate args, provide default scm level
+    import bugsy
+    import requests
+    from vcttesting.bugzilla import Bugzilla
+
     if len(sys.argv) != 5:
         print("syntax: create-user email password name scm-level")
         sys.exit(1)
     email, password, name, scm = sys.argv[1:]
 
-    import bugsy
-    import requests
-    from vcttesting.bugzilla import Bugzilla
+    # XXX validate args
+
+    if ':' not in name:
+        name = ':' + name
 
     if not os.path.isfile(STATE_FILENAME):
         print("Failed to find state.json: "
@@ -71,14 +75,34 @@ def main(args):
         api_key = subprocess.check_output(
             ['/bugzilla/scripts/issue-api-key.pl', email]).strip()
         state['users'][email]['apikey'] = api_key
+    else:
+        api_key = state['users'][email]['apikey']
 
     bz_rest.request('/login?login=%s&password=%s'
                     % (quote_plus(email), quote_plus(password)))
 
-    print(state)  # XXX debugging
-
     with open(STATE_FILENAME, 'w') as state_file:
         json.dump(state, state_file)
+
+    # review board
+
+    print("linking %s with review board" % email)
+
+    url = state['reviewboard'] + 'mozreview/bmo_auth_callback/'
+    data = {'client_api_login': email, 'client_api_key': api_key}
+    response = requests.post(url, data=json.dumps(data))
+    if response.status_code != 200:
+        raise Exception('bmo_auth_callback setup failed')
+    result = response.json()['result']
+    params = {'client_api_login': email, 'callback_result': result}
+    response = requests.get(url, params=params)
+    if response.status_code != 200:
+        raise Exception('bmo_auth_callback result failed')
+
+    # XXX ldap
+    # XXX ssh
+
+    print "done"
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

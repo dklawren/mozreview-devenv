@@ -1,5 +1,8 @@
 ---
 
 - name: install dependencies
-  yum: name=openldap-servers
+  yum: name={{ item }}
        state=installed
+  with_items:
+    - openldap-servers
+    - perl(Net::LDAP)

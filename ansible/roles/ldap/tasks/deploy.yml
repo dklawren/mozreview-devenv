@@ -10,8 +10,14 @@
         state=absent
   when: existing_ldap.stat.exists == false
 
-- copy: src=etc/
-        dest=/etc/openldap
+- copy: src=slapd.conf
+        dest=/etc/openldap/slapd.conf
+        owner=ldap
+        group=ldap
+  when: existing_ldap.stat.exists == false
+
+- copy: src=ldap.conf
+        dest=/etc/ldap.conf
         owner=ldap
         group=ldap
   when: existing_ldap.stat.exists == false
@@ -30,6 +36,10 @@
 - copy: src=mozilla.ldif
         dest=/ldap/mozilla.ldif
   when: existing_ldap.stat.exists == false
+
+- copy: src=openssh-ldap-publickey
+        dest=/usr/bin/openssh-ldap-publickey
+        mode=0755
 
 - name: seed ldap repo
   become_user: ldap
