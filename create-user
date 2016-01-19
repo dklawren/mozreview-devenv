@@ -1,0 +1,2 @@
+#!/bin/sh
+vagrant ssh -c "sudo /src/dev/ansible/scripts/create-user $*"

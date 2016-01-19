@@ -1,0 +1,84 @@
+#!/usr/bin/env python
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+import json
+import os
+import sys
+from urllib import quote_plus
+import subprocess
+
+HERE = os.path.abspath('%s/../..' % os.path.dirname(__file__))
+STATE_FILENAME = "%s/env/state.json" % HERE
+
+
+def main(args):
+    if 'VIRTUAL_ENV' not in os.environ:
+        activate = os.path.join(HERE, 'venv', 'bin', 'activate_this.py')
+        execfile(activate, dict(__file__=activate))
+        sys.executable = os.path.join(HERE, 'venv', 'bin', 'python')
+
+    # XXX validate args, provide default scm level
+    if len(sys.argv) != 5:
+        print("syntax: create-user email password name scm-level")
+        sys.exit(1)
+    email, password, name, scm = sys.argv[1:]
+
+    import bugsy
+    import requests
+    from vcttesting.bugzilla import Bugzilla
+
+    if not os.path.isfile(STATE_FILENAME):
+        print("Failed to find state.json: "
+              "ensure vagrant has provisioned the vm")
+        sys.exit(1)
+    with open(STATE_FILENAME) as state_file:
+        state = json.load(state_file)
+    if 'users' not in state:
+        state['users'] = {}
+
+    # bugzilla
+
+    bz_rest = bugsy.Bugsy(
+        username='admin@example.com',
+        password='password',
+        bugzilla_url='%srest/' % state['bugzilla']
+    )
+    bz_xmlrpc = Bugzilla(state['bugzilla'], 'admin@example.com', 'password')
+
+    try:
+        bz_rest.request('/user/%s' % quote_plus(email))
+        exists = True
+    except Exception:
+        # bugsy doesn't expose bugzilla's error code, so assume any
+        # failure is "no such user"
+        exists = False
+    if exists:
+        print("%s already exists" % email)
+    else:
+        print("creating user %s (%s) scm-level %s" % (email, name, scm))
+        bz_xmlrpc.create_user(email, password, name)
+
+    if email not in state['users']:
+        state['users'][email] = {}
+    state['users'][email]['password'] = password
+
+    # XXX validate api-key, and create a new one if required
+
+    if 'apikey' not in state['users'][email]:
+        print("creating bugzilla api-key")
+        api_key = subprocess.check_output(
+            ['/bugzilla/scripts/issue-api-key.pl', email]).strip()
+        state['users'][email]['apikey'] = api_key
+
+    bz_rest.request('/login?login=%s&password=%s'
+                    % (quote_plus(email), quote_plus(password)))
+
+    print(state)  # XXX debugging
+
+    with open(STATE_FILENAME, 'w') as state_file:
+        json.dump(state, state_file)
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))

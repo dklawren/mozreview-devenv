@@ -14,3 +14,22 @@
        executable={{ venv }}/bin/pip
        name=pip
        state=latest
+
+- name: deploy vcttesting
+  file: path={{ venv }}/lib/python2.7/site-packages/vcttesting
+        state=link
+        src=../../../../../testing/vcttesting
+
+- name: install python libs
+  command: "{{ venv }}/bin/python setup.py develop"
+  args:
+    chdir: /src/{{ item }}
+  with_items:
+    - pylib/Bugsy
+
+- name: install python libs
+  pip: virtualenv={{ venv }}
+       executable={{ venv }}/bin/pip
+       name={{ item }}
+  with_items:
+    - requests

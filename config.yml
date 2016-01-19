@@ -2,6 +2,9 @@
 REVIEWBOARD_PORT: 8080
 BUGZILLA_PORT: 8081
 
-# XXX document these as well
-VERBOSE: true
+# enable verbose vagrant output
+VERBOSE: false
+
+# configure port forwarding for the ldap server
+# not required for normal operations, but can be useful for debugging
 FORWARD_LDAP: true

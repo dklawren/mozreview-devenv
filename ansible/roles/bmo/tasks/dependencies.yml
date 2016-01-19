@@ -99,6 +99,7 @@
     - perl(ExtUtils::PkgConfig)
     - perl(File::HomeDir)
     - perl(File::Slurp)
+    - perl(JSON::RPC::Legacy::Server::CGI)
     - perl(Sort::Versions)
     - perl(Term::ReadLine::Gnu)
     - perl(Test::Exception)

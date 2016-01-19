@@ -67,6 +67,9 @@
     createsuperuser -- --username=root --email=root@example.com
   when: existing_rb.stat.exists == false
 
+- name: disable less.js logging
+  command: sed -i 's/less = {$/less = { logLevel:0,/' /venv/lib/python2.7/site-packages/reviewboard/templates/js/pipeline.html
+
 - name: create log file
   file: path=/var/log/httpd/reviewboard.log owner=reviewboard group=reviewboard state=touch
 

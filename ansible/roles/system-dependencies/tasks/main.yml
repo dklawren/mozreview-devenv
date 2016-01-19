@@ -61,7 +61,22 @@
 
 - name: install our default httpd config
   copy: src=server.conf
-       dest=/etc/httpd/conf.d/server.conf
+        dest=/etc/httpd/conf.d/server.conf
 
 - name: setup logging
   file: path=/var/log/httpd mode=0755
+
+- name: upgrade all packages
+  yum: name=*
+       state=latest
+
+- name: create env
+  file: path=/src/dev/env
+        state=directory
+
+- name: save state
+  command: >
+    /src/dev/ansible/scripts/save-state
+    --reviewboard=http://localhost:{{ reviewboard_port }}/
+    --bugzilla=http://localhost:{{ bugzilla_port }}/
+    /src/dev/env/state.json

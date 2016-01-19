@@ -17,8 +17,11 @@ non-goals:
 
 installation:
 
-to install copy the contents of this repo into a 'vagrant' directory under your
-vct checkout (ie. this file should be version-control-tools/vagrant/README.md).
-
-optional: edit config.yml to set the ports
-run 'vagrant up'
+- copy the contents of this repo into a 'dev' directory under your vct checkout
+  (ie. this file should be version-control-tools/dev/README.md).
+- optional: edit config.yml to set ports
+- run 'vagrant up'
+- add the following to .hgignore:
+  - dev/env/
+  - dev/repo/
+  - dev/venv/

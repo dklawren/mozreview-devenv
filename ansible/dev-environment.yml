@@ -3,13 +3,15 @@
   hosts: all
   become: yes
   roles:
-    - { role: system-dependencies }
+    - { role: system-dependencies,
+        reviewboard_port: '{{ REVIEWBOARD_PORT }}',
+        bugzilla_port: '{{ BUGZILLA_PORT }}' }
     - { role: virtualenv,
-        venv: '/src/vagrant/venv' }
+        venv: '/src/dev/venv' }
     - { role: bmo,
         bugzilla_port: '{{ BUGZILLA_PORT }}' }
     - { role: ldap }
     - { role: review-board,
-        venv: '/src/vagrant/venv',
+        venv: '/venv',
         reviewboard_port: '{{ REVIEWBOARD_PORT }}',
         bugzilla_port: '{{ BUGZILLA_PORT }}' }
