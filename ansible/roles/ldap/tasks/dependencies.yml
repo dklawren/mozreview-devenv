@@ -5,4 +5,5 @@
        state=installed
   with_items:
     - openldap-servers
+    - nss-pam-ldapd
     - perl(Net::LDAP)
