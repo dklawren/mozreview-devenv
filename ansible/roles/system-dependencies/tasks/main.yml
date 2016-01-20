@@ -71,7 +71,7 @@
        state=latest
 
 - name: create env
-  file: path=/src/dev/env
+  file: path=/src/dev/env/keys
         state=directory
 
 - name: save state

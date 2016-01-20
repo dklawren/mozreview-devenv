@@ -11,6 +11,10 @@ import subprocess
 
 HERE = os.path.abspath('%s/../..' % os.path.dirname(__file__))
 STATE_FILENAME = "%s/env/state.json" % HERE
+BUGZILLA_USER = 'admin@example.com'
+BUGZILLA_PASS = 'password'
+LDAP_USER = 'cn=admin,dc=mozilla'
+LDAP_PASS = 'password'
 
 
 def main(args):
@@ -21,17 +25,25 @@ def main(args):
 
     import bugsy
     import requests
+    import ldap
+    from vcttesting.ldap import LDAP
     from vcttesting.bugzilla import Bugzilla
 
-    if len(sys.argv) != 5:
-        print("syntax: create-user email password name scm-level")
+    if len(sys.argv) != 6:
+        print("syntax: create-user "
+              "<email> <password> <username> <real name> <scm-level>")
+        print("    eg: create-user "
+              "glob@example.com password glob 'glob jones' 3")
         sys.exit(1)
-    email, password, name, scm = sys.argv[1:]
+    email, password, username, fullname, scm_level = sys.argv[1:]
 
     # XXX validate args
 
-    if ':' not in name:
-        name = ':' + name
+    if ':' not in fullname:
+        fullname += " (:%s)" % username
+    scm_level = int(scm_level)
+
+    # load state
 
     if not os.path.isfile(STATE_FILENAME):
         print("Failed to find state.json: "
@@ -42,14 +54,16 @@ def main(args):
     if 'users' not in state:
         state['users'] = {}
 
+    print("creating user %s (%s) scm-level %s" % (email, fullname, scm_level))
+
     # bugzilla
 
     bz_rest = bugsy.Bugsy(
-        username='admin@example.com',
-        password='password',
+        username=BUGZILLA_USER,
+        password=BUGZILLA_PASS,
         bugzilla_url='%srest/' % state['bugzilla']
     )
-    bz_xmlrpc = Bugzilla(state['bugzilla'], 'admin@example.com', 'password')
+    bz_xmlrpc = Bugzilla(state['bugzilla'], BUGZILLA_USER, BUGZILLA_PASS)
 
     try:
         bz_rest.request('/user/%s' % quote_plus(email))
@@ -58,15 +72,19 @@ def main(args):
         # bugsy doesn't expose bugzilla's error code, so assume any
         # failure is "no such user"
         exists = False
-    if exists:
-        print("%s already exists" % email)
-    else:
-        print("creating user %s (%s) scm-level %s" % (email, name, scm))
-        bz_xmlrpc.create_user(email, password, name)
+        if email in state['users']:
+            del state['users'][email]
+    if not exists:
+        print("creating %s in bugzilla" % email)
+        bz_xmlrpc.create_user(email, password, fullname)
 
     if email not in state['users']:
         state['users'][email] = {}
     state['users'][email]['password'] = password
+    if 'id' not in state['users'][email]:
+        response = bz_rest.request('/user/%s' % quote_plus(email))
+        state['users'][email]['id'] = response['users'][0]['id']
+    uid = state['users'][email]['id']
 
     # XXX validate api-key, and create a new one if required
 
@@ -82,7 +100,7 @@ def main(args):
                     % (quote_plus(email), quote_plus(password)))
 
     with open(STATE_FILENAME, 'w') as state_file:
-        json.dump(state, state_file)
+        json.dump(state, state_file, indent=2, sort_keys=True)
 
     # review board
 
@@ -99,10 +117,32 @@ def main(args):
     if response.status_code != 200:
         raise Exception('bmo_auth_callback result failed')
 
-    # XXX ldap
-    # XXX ssh
+    # ldap
 
-    print "done"
+    print("adding %s ('%s' uid %d) to ldap" % (email, username, uid))
+
+    l = ldap.initialize('ldap://localhost:389')
+    l.simple_bind(LDAP_USER, LDAP_PASS)
+
+    try:
+        l.delete_s('mail=%s,o=com,dc=mozilla' % email)
+    except ldap.NO_SUCH_OBJECT:
+        pass
+    for level in range(1, scm_level + 1):
+        modlist = [(ldap.MOD_DELETE, b'memberUid', email)]
+        try:
+            l.modify_s('cn=scm_level_%s,ou=groups,dc=mozilla' % level, modlist)
+        except ldap.NO_SUCH_ATTRIBUTE:
+            pass
+
+    key_filename = "/src/dev/env/keys/%s" % email
+    l = LDAP('ldap://localhost:389/', LDAP_USER, LDAP_PASS)
+    l.create_user(email, username, uid, fullname,
+                  key_filename=key_filename, scm_level=scm_level)
+
+    #
+
+    print("done")
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

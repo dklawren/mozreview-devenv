@@ -55,42 +55,17 @@
       chdir: /bugzilla
   when: existing_bmo.stat.exists == false
 
-# XXX use with_items for the params
-
-- name: set mail_delivery_method
-  command: perl scripts/set-param.pl mail_delivery_method None
+- name: set params
+  command: perl scripts/set-param.pl {{ item.name }} {{ item.value }}
   args:
-      chdir: /bugzilla
-  when: existing_bmo.stat.exists == false
-
-- name: set bugzilla_version
-  command: perl scripts/set-param.pl bugzilla_version BMO-MozReview
-  args:
-      chdir: /bugzilla
-  when: existing_bmo.stat.exists == false
-
-- name: set auth_delegation
-  command: perl scripts/set-param.pl auth_delegation 1
-  args:
-      chdir: /bugzilla
-  when: existing_bmo.stat.exists == false
-
-- name: set urlbase
-  command: perl scripts/set-param.pl urlbase http://localhost:{{ bugzilla_port }}/
-  args:
-      chdir: /bugzilla
-  when: existing_bmo.stat.exists == false
-
-- name: configure mozreview extension (1/2)
-  command: perl scripts/set-param.pl mozreview_base_url http://localhost:8080/
-  args:
-      chdir: /bugzilla
-  when: existing_bmo.stat.exists == false
-
-- name: configure mozreview extension (2/2)
-  command: perl scripts/set-param.pl mozreview_auth_callback_url http://localhost:8080/mozreview/bmo_auth_callback/
-  args:
-      chdir: /bugzilla
+    chdir: /bugzilla
+  with_items:
+    - { name: 'auth_delegation', value: '1' }
+    - { name: 'bugzilla_version', value: 'BMO-MozReview' }
+    - { name: 'mail_delivery_method', value: 'None' }
+    - { name: 'mozreview_auth_callback_url', value: 'http://localhost:8080/mozreview/bmo_auth_callback/' }
+    - { name: 'mozreview_base_url', value: 'http://localhost:8080/' }
+    - { name: 'urlbase', value: 'http://localhost:{{ bugzilla_port }}/' }
   when: existing_bmo.stat.exists == false
 
 - name: restart httpd

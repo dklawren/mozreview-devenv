@@ -53,3 +53,15 @@
   service: name=slapd
            enabled=yes
            state=started
+
+- copy: src=sshd_config
+        dest=/etc/ssh/sshd_config
+        owner=root
+        group=root
+        mode=0600
+  when: existing_ldap.stat.exists == false
+
+- name: reload sshd
+  service: name=sshd
+           state=reloaded
+  when: existing_ldap.stat.exists == false

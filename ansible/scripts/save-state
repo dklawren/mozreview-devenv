@@ -30,7 +30,7 @@ def main():
     for o, a in opts:
         state[o[2:]] = a
     with open(state_filename, 'w') as state_file:
-        json.dump(state, state_file)
+        json.dump(state, state_file, indent=2, sort_keys=True)
 
 if __name__ == "__main__":
     main()
