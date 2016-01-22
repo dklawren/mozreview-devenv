@@ -5,15 +5,6 @@
   ignore_errors: true
   register: existing_rb
 
-- name: install httpd vhost config
-  copy: src=vhost.conf
-        dest=/etc/httpd/conf.d/reviewboard.conf
-  when: existing_rb.stat.exists == false
-
-- name: set httpd ports
-  command: sed -i 's/\$REVIEWBOARD_PORT\$/{{ reviewboard_port }}/g' /etc/httpd/conf.d/reviewboard.conf
-  when: existing_rb.stat.exists == false
-
 - name: install review board instance
   command: >
     "{{ venv }}/bin/rb-site" install
@@ -70,10 +61,23 @@
 - name: disable less.js logging
   command: sed -i 's/less = {$/less = { logLevel:0,/' /venv/lib/python2.7/site-packages/reviewboard/templates/js/pipeline.html
 
-- name: create log file
-  file: path=/var/log/httpd/reviewboard.log owner=reviewboard group=reviewboard state=touch
+- name: install server wrapper
+  copy: src=start-reviewboard
+        dest=/home/reviewboard/start-reviewboard
+        owner=reviewboard
+        group=reviewboard
+        mode=0755
+  when: existing_rb.stat.exists == false
 
-- name: restart httpd
-  service: name=httpd
-           state=restarted
+- name: install startup script
+  cron: name="run django server"
+        user=reviewboard
+        special_time=reboot
+        job=/home/reviewboard/start-reviewboard
+        state=present
+  when: existing_rb.stat.exists == false
+
+- name: start django
+  command: /home/reviewboard/start-reviewboard {{ reviewboard_port }}
+  become_user: reviewboard
   when: existing_rb.stat.exists == false

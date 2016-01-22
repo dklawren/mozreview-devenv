@@ -22,9 +22,12 @@
     - npm
     - openldap-devel
     - openssl-devel
+    - psmisc
     - python-devel
     - python-pip
     - python-virtualenv
+    - screen
+    - strace
     - subversion-devel
     - telnet
     - tcpdump
@@ -42,6 +45,10 @@
 - name: disable selinx enforcement
   command: setenforce 0
   when: selinux_enabled|success
+
+- name: upgrade mercurial
+  pip: name=mercurial
+       state=latest
 
 - name: configure memcached
   service: name=memcached
@@ -77,6 +84,7 @@
 - name: save state
   command: >
     /src/dev/ansible/scripts/save-state
+    --ip
     --reviewboard=http://localhost:{{ reviewboard_port }}/
     --bugzilla=http://localhost:{{ bugzilla_port }}/
     /src/dev/env/state.json

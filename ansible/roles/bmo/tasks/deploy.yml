@@ -6,12 +6,8 @@
   register: existing_bmo
 
 - name: install httpd vhost config
-  copy: src=vhost.conf
-        dest=/etc/httpd/conf.d/bugzilla.conf
-  when: existing_bmo.stat.exists == false
-
-- name: set httpd ports
-  command: sed -i 's/\$BUGZILLA_PORT\$/{{ bugzilla_port }}/g' /etc/httpd/conf.d/bugzilla.conf
+  template: src=vhost.conf.j2
+            dest=/etc/httpd/conf.d/bugzilla.conf
   when: existing_bmo.stat.exists == false
 
 - name: create checksetup_answers.txt

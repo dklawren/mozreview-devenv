@@ -58,6 +58,8 @@ def main(args):
 
     # bugzilla
 
+    # XXX once this is part of vct, add get_user to vcttesting.bugzilla
+    # and remove bz_rest
     bz_rest = bugsy.Bugsy(
         username=BUGZILLA_USER,
         password=BUGZILLA_PASS,
@@ -121,6 +123,10 @@ def main(args):
 
     print("adding %s ('%s' uid %d) to ldap" % (email, username, uid))
 
+    # XXX once this is part of vct, add delete_user to vcttesting.ldap
+    # and remove the direct ldap calls
+
+    # it's easier to delete an recreate an ldap user
     l = ldap.initialize('ldap://localhost:389')
     l.simple_bind(LDAP_USER, LDAP_PASS)
 

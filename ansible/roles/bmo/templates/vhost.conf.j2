@@ -1,8 +1,6 @@
-# $BUGZILLA_PORT$ is replaced during deployment with the port from config.yml
+Listen {{ bugzilla_port | mandatory }}
 
-Listen $BUGZILLA_PORT$
-
-<VirtualHost *:$BUGZILLA_PORT$>
+<VirtualHost *:{{ bugzilla_port | mandatory }}>
   ServerName bmo
 
   DocumentRoot "/bugzilla"

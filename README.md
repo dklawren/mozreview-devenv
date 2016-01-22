@@ -31,7 +31,7 @@ using:
 (WIP)
 
 edit files directly in your local filesystem and they should automatically be
-updated in the vm (currently an automatic apache restart is not implemented).
+updated in the vm.
 
 (document hg repo)
 (document user creation)
@@ -40,3 +40,6 @@ within the vm:
 /src        : nfs mount of your vct directory
 /reviewboard: reviewboard data directory
 /bugzilla   : bmo (uses mod_cgi, no need to restart apache when making changes)
+
+reviewboard is run using django's runserver inside a screen session owned
+by the 'reviewboard' user.
