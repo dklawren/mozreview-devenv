@@ -1,0 +1,5 @@
+---
+
+- name: install python dependencies
+  pip: name=python-ldap
+       state=latest

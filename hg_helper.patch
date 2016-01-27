@@ -1,0 +1,44 @@
+diff --git a/hgserver/pash/hg_helper.py b/hgserver/pash/hg_helper.py
+--- a/hgserver/pash/hg_helper.py
++++ b/hgserver/pash/hg_helper.py
+@@ -1,15 +1,16 @@
+ # This Source Code Form is subject to the terms of the Mozilla Public
+ # License, v. 2.0. If a copy of the MPL was not distributed with this
+ # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ 
+ from cgi import escape
+ import ConfigParser
+ import os
++import pwd
+ import sys
+ import re
+ import shlex
+ from subprocess import (
+     Popen,
+     PIPE,
+ )
+ 
+@@ -106,16 +107,23 @@ def is_valid_user(mail):
+         '(': '',
+         ')': '',
+         "'": '',
+         '"': '',
+         ';': '',
+     }
+     for search, replace in replacements.items():
+         mail = mail.replace(search, replace)
++    if '@' not in mail:
++        # When running in the MozReview development environment, authentication
++        # is performed with local users, with their email address in the
++        # user description.
++        user_comment = pwd.getpwnam(mail)[4]
++        if '@' in user_comment:
++            mail = user_comment
+     account_status = get_ldap_attribute(mail, 'hgAccountEnabled', url)
+     if account_status == 'TRUE':
+         return 1
+     elif account_status == 'FALSE':
+         return 2
+     else:
+         return 0
+ 

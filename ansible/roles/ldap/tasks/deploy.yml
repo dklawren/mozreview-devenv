@@ -37,10 +37,6 @@
         dest=/ldap/mozilla.ldif
   when: existing_ldap.stat.exists == false
 
-- copy: src=openssh-ldap-publickey
-        dest=/usr/bin/openssh-ldap-publickey
-        mode=0755
-
 - name: seed ldap repo
   become_user: ldap
   command: >
@@ -53,39 +49,3 @@
   service: name=slapd
            enabled=yes
            state=started
-
-- copy: src=sshd_config
-        dest=/etc/ssh/sshd_config
-        owner=root
-        group=root
-        mode=0600
-  when: existing_ldap.stat.exists == false
-
-- name: run authconfig
-  command: >
-    authconfig
-    --enablemkhomedir
-    --enableldap
-    --enableldapauth
-    --ldapserver=localhost
-    --ldapbasedn=dc=mozilla
-    --updateall
-  when: existing_ldap.stat.exists == false
-
-- copy: src=nslcd.conf
-        dest=/etc/nslcd.conf
-        owner=root
-        group=root
-        mode=0600
-  when: existing_ldap.stat.exists == false
-
-- name: start nslcd
-  service: name=nslcd
-           enabled=yes
-           state=started
-  when: existing_ldap.stat.exists == false
-
-- name: reload sshd
-  service: name=sshd
-           state=reloaded
-  when: existing_ldap.stat.exists == false

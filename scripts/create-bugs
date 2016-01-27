@@ -1,0 +1,67 @@
+#!/usr/bin/env python
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+import json
+import os
+import sys
+
+ROOT = os.path.abspath('%s/../..' % os.path.dirname(__file__))
+STATE_FILENAME = ROOT + "/dev/env/state.json"
+BUGZILLA_USER = 'admin@example.com'
+BUGZILLA_PASS = 'password'
+
+
+def main(args):
+    if 'VIRTUAL_ENV' in os.environ:
+        raise Exception("you cannot run this script from within "
+                        "the virtual environment")
+    activate = ROOT + "/dev/venv/bin/activate_this.py"
+    execfile(activate, dict(__file__=activate))
+    sys.executable = ROOT + "/dev/venv/bin/python"
+
+    import bugsy
+
+    if len(args) != 3:
+        print("syntax: create-bugs <count> <product> <component>\n"
+              "    eg: create-bugs 10 Firefox General\n"
+              "glob@example.com password glob 'glob jones' 3")
+        sys.exit(1)
+    bug_count, product, component = args
+
+    # validate args
+
+    try:
+        bug_count = int(bug_count)
+        if bug_count < 0 or bug_count > 50:
+            raise Exception("aiee")
+    except Exception:
+        print("invalid count: "
+              "must be an integer between 0 and  inclusive")
+        sys.exit(1)
+
+    # load state
+
+    if not os.path.isfile(STATE_FILENAME):
+        print("Failed to find state.json: "
+              "ensure vagrant has provisioned the vm")
+        sys.exit(1)
+    with open(STATE_FILENAME) as state_file:
+        state = json.load(state_file)
+    if 'users' not in state:
+        state['users'] = {}
+
+    # init bugsy and create bugs
+
+    bz = bugsy.Bugsy(username=BUGZILLA_USER, password=BUGZILLA_PASS,
+                     bugzilla_url='%srest/' % state['bugzilla'])
+    for i in range(1, bug_count + 1):
+        print("creating bug %s" % i)
+        bug = bugsy.Bug(bz, product=product, component=component,
+                        summary='Range %d' % i)
+        bz.put(bug)
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))

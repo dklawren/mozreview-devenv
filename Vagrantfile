@@ -25,6 +25,7 @@ Vagrant.configure(2) do |config|
   # the same port for internal and external requests
   config.vm.network :forwarded_port, guest: configs['REVIEWBOARD_PORT'], host: configs['REVIEWBOARD_PORT']
   config.vm.network :forwarded_port, guest: configs['BUGZILLA_PORT'], host: configs['BUGZILLA_PORT']
+  config.vm.network :forwarded_port, guest: 222, host: configs['SSH_PORT']
 
   if configs['FORWARD_LDAP']
     # mapping ldap is optional, and may be useful for debugging
@@ -39,9 +40,19 @@ Vagrant.configure(2) do |config|
     ansible.verbose = configs['VERBOSE']
   end
 
-  # XXX write more instructions, probably using at_exit
-  config.vm.provision "shell", privileged: false, inline: <<-EOF
-    echo "Review Board: http://localhost:#{configs['REVIEWBOARD_PORT']}/"
-    echo "Bugzilla: http://localhost:#{configs['BUGZILLA_PORT']}/"
-  EOF
+  config.trigger.after [:up, :provision] do
+    unless File.exist?('test-repo')
+      run "./create-user default@example.com password default 'Default User' 3"
+      run "./create-user level0@example.com password level0 'Level 0 User' 0"
+      run "./create-user level1@example.com password level1 'Level 1 User' 1"
+      run "./create-user level2@example.com password level2 'Level 2 User' 2"
+      run "./create-user level3@example.com password level3 'Level 3 User' 3"
+      run "./scripts/create-repo"
+    end
+    info "-=-=-=-=-=-=-"
+    info "Review Board: http://localhost:#{configs['REVIEWBOARD_PORT']}/"
+    info "Bugzilla: http://localhost:#{configs['BUGZILLA_PORT']}/"
+    info "Mercurial repository: ./test-repo/"
+    info "-=-=-=-=-=-=-"
+  end
 end

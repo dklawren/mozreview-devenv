@@ -1,0 +1,131 @@
+#!/usr/bin/env python2.7
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+
+from contextlib import contextmanager
+
+ROOT = os.path.abspath('%s/../..' % os.path.dirname(__file__))
+STATE_FILENAME = ROOT + "/dev/env/state.json"
+REVIEWBOARD_USER = 'admin@example.com'
+REVIEWBOARD_PASS = 'password'
+
+
+@contextmanager
+def ReviewBoardClient(url, username, password):
+    from rbtools.api.client import RBClient
+    tempd = tempfile.mkdtemp()
+    try:
+        cookie_file = os.path.join(tempd, 'cookies')
+        rbclient = RBClient(url, cookie_file=cookie_file,
+                            username=username, password=password)
+        yield rbclient
+    finally:
+        shutil.rmtree(tempd)
+
+
+def main(args):
+    if len(args) == 0:
+        email = "default@example.com"
+    else:
+        email = args[0]
+
+    # load state
+
+    if not os.path.isfile(STATE_FILENAME):
+        print("Failed to find state.json: "
+              "ensure vagrant has provisioned the vm")
+        sys.exit(1)
+    with open(STATE_FILENAME) as state_file:
+        state = json.load(state_file)
+    if 'users' not in state:
+        raise Exception("no users exist in state.json")
+    if email not in state['users']:
+        raise Exception("user not found: " + email)
+
+    # create repo
+
+    if not os.path.exists('test-repo'):
+
+        print("cloning")
+        subprocess.check_call([
+            'hg', 'clone',
+            '--ssh', ROOT + '/dev/scripts/mozreview-dev-ssh ' + email,
+            'ssh://hgrb/test-repo'
+        ])
+
+        print("adding to review board")
+        subprocess.call(['pip', 'install', 'RBTools', '-q'])
+
+        name = 'test-repo'
+        url = "http://localhost:8081/hg/" + name  # XXX does not work
+        bug_url = state['bugzilla'] + '%sshow_bug.cgi?id=%%s'
+
+        with ReviewBoardClient(state['reviewboard'],
+                               REVIEWBOARD_USER, REVIEWBOARD_PASS) as c:
+            root = c.get_root()
+
+            repos = root.get_repositories()
+            existing = False
+            for r in repos:
+                if r['name'] == name:
+                    existing = True
+                    repo = r
+                    break
+            if not existing:
+                repo = repos.create(name=name, path=url, tool='Mercurial',
+                                    bug_tracker=bug_url)
+
+            groups = root.get_groups()
+            existing = False
+            for g in groups:
+                if g['name'] == name:
+                    existing = True
+                    break
+            if not existing:
+                groups.create(display_name=name, name=name,
+                              visible=True, invite_only=False)
+
+            reviewers = root.get_default_reviewers()
+            reviewers.create(name=name, file_regex='.*', groups=name,
+                             repositories=str(repo.id))
+
+    # create hgrc
+
+    print("updating hgrc")
+    config = (
+        "[paths]\n"
+        "default = ssh://hgrb/test-repo\n"
+        "default-push = ssh://hgrb/test-repo\n"
+        "\n"
+        "[extensions]\n"
+        "mozreview-repo = " + ROOT + "/testing/mozreview-repo.py\n"
+        "reviewboard = " + ROOT + "/hgext/reviewboard/client.py\n"
+        "\n"
+        "[ui]\n"
+        "ssh = " + ROOT + "/dev/scripts/mozreview-dev-ssh " + email + "\n"
+        "\n"
+        "[bugzilla]\n"
+        "username = " + email + "\n"
+        "apikey = " + state['users'][email]['apikey'] + "\n"
+    )
+    with open("test-repo/.hg/hgrc", 'w') as hgrc_file:
+        hgrc_file.write(config)
+
+
+if __name__ == '__main__':
+    try:
+        os.chdir(ROOT + "/dev")
+        sys.exit(main(sys.argv[1:]))
+        os.chdir(ROOT)
+    except Exception as e:
+        os.chdir(ROOT)
+        print(e)
+        sys.exit(1)

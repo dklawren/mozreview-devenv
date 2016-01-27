@@ -5,11 +5,17 @@
   roles:
     - { role: system-dependencies,
         reviewboard_port: '{{ REVIEWBOARD_PORT }}',
-        bugzilla_port: '{{ BUGZILLA_PORT }}' }
+        bugzilla_port: '{{ BUGZILLA_PORT }}',
+        ssh_port: '{{ SSH_PORT }}' }
     - { role: virtualenv,
         venv: '/src/dev/venv' }
     - { role: bmo,
         bugzilla_port: '{{ BUGZILLA_PORT }}' }
+    - { role: hg,
+        venv: '/venv',
+        reviewboard_port: '{{ REVIEWBOARD_PORT }}',
+        bugzilla_port: '{{ BUGZILLA_PORT }}',
+        ssh_port: '{{ SSH_PORT }}' }
     - { role: ldap }
     - { role: review-board,
         venv: '/venv',

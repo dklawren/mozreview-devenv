@@ -1,0 +1,7 @@
+{
+  "username": "cn=admin,dc=mozilla",
+  "password": "password",
+  "url": "ldap://localhost/",
+  "write_url": "ldap://localhost/",
+  "default_domain": "example.com"
+}

@@ -1,0 +1,14 @@
+---
+- hosts: 127.0.0.1
+  connection: local
+  tasks:
+  - name: create user
+    user: name={{ username | mandatory }}
+          comment={{ email | mandatory }}
+          group={{ group | mandatory }}
+          groups={{ grouplist | mandatory }}
+          password=*
+
+  - name: set authorized_key
+    authorized_key: user={{ username | mandatory }}
+                    key="{{ key | mandatory }}"

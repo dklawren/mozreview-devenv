@@ -1,0 +1,45 @@
+[trusted]
+users = hg, root, apache
+groups = scm_level_1
+
+[email]
+method = /usr/sbin/sendmail
+from = hg@localhost
+
+[diff]
+# Enable git-style diffs in order to show binary files, other
+# metadata provided by Git's diff format.
+git = true
+
+[extensions]
+rbserver = /src/hgext/reviewboard/server.py
+
+[web]
+templates = /repo/hg/version-control-tools/hgtemplates
+allow_push = *
+push_ssl = False
+
+[interhg]
+a_httplinks = s|(https?://\S+)|<a href="\1">\1</a>|i
+bugzilla = s|((?:bug[\s#]*|b=#?|#)(\d{4,}))|<a href="http://localhost:{{ bugzilla_port | mandatory }}/show_bug.cgi?id=\2" title="Bug \2">\1</a>|i
+
+[serverlog]
+reporoot = /repo/hg/mozilla
+
+[format]
+generaldelta = true
+
+[phases]
+publish = False
+
+[bugzilla]
+url = http://localhost:{{ bugzilla_port | mandatory }}/
+
+[reviewboard]
+url = http://localhost:{{ reviewboard_port | mandatory }}/
+username = mozreview
+password = password
+repobasepath = /repo/hg/mozilla
+
+[pushlog]
+remoteuserprefix = bmo

@@ -1,0 +1,119 @@
+---
+
+# to ensure groups can be created in /etc/group, this must be executed before
+# pam is hooked up to ldap in the ldap role
+# that said, it remains to be seen if we need these groups :)
+
+- name: check for existing instance
+  stat: path=/repo
+  ignore_errors: true
+  register: existing_repo
+
+- name: source code groups
+  group: name={{ item.name }}
+         gid={{ item.gid }}
+         state=present
+  with_items:
+    - { name: 'scm_level_1', gid: 673 }
+    - { name: 'scm_level_2', gid: 685 }
+    - { name: 'scm_level_3', gid: 679 }
+    - { name: 'scm_l10n', gid: 678 }
+    - { name: 'scm_l10n_infra', gid: 680 }
+    - { name: 'scm_sec_sensitive', gid: 686 }
+    - { name: 'scm_ecmascript', gid: 687 }
+  when: existing_repo.stat.exists == false
+
+- name: hg user
+  user: name=hg
+        uid=500
+        shell=/bin/bash
+        comment='Hg user'
+        groups=scm_level_1,scm_level_2,scm_level_3,scm_l10n,scm_l10n_infra,scm_sec_sensitive
+  when: existing_repo.stat.exists == false
+
+- name: create repository
+  file: path=/repo/hg/mozilla
+        state=directory
+        mode=0755
+  when: existing_repo.stat.exists == false
+
+- name: symlink venv
+  file: path=/repo/hg/venv_pash
+        src={{ venv }}
+        state=link
+  when: existing_repo.stat.exists == false
+
+- name: global hgrc
+  template: src=hgrc.j2
+            dest=/etc/mercurial/hgrc
+            mode=0644
+  when: existing_repo.stat.exists == false
+
+- name: install create-repo
+  copy: src=create-repo
+        dest=/usr/local/sbin/create-repo
+        mode=0755
+  when: existing_repo.stat.exists == false
+
+- name: create test-repo
+  command: /usr/local/sbin/create-repo test-repo 1
+  when: existing_repo.stat.exists == false
+
+- name: install pash
+  copy: src=/src/hgserver/pash/{{ item }}
+        dest=/usr/local/bin/{{ item }}
+        owner=root
+        group=root
+        mode=0755
+  with_items:
+    - pash.py
+    - hg_helper.py
+    - ldap_helper.py
+    - pash_wrapper
+    - repo_group.py
+    - sh_helper.py
+  when: existing_repo.stat.exists == false
+
+- name: add ldap settings file
+  copy: src={{ item }}
+        dest=/etc/mercurial/{{ item }}
+        owner=root
+        group=root
+        mode=0644
+  with_items:
+    - ldap.json
+    - pash.json
+  when: existing_repo.stat.exists == false
+
+- name: config hg sshd
+  copy: src=sshd_hg_config
+        dest=/etc/ssh/sshd_hg_config
+        owner=root
+        group=root
+        mode=0600
+  when: existing_repo.stat.exists == false
+
+- name: install server wrapper
+  copy: src=start-hg-sshd
+        dest=/usr/sbin/start-hg-sshd
+        owner=root
+        group=root
+        mode=0755
+  when: existing_repo.stat.exists == false
+
+- name: install startup script
+  cron: name="run sshd hg server"
+        special_time=reboot
+        job=/usr/sbin/start-hg-sshd
+        state=present
+  when: existing_repo.stat.exists == false
+
+- name: generate key
+  command: ssh-keygen -f /etc/ssh/ssh_host_dsa_key -N '' -t dsa
+  args:
+      creates: /etc/ssh/ssh_host_dsa_key
+  when: existing_repo.stat.exists == false
+
+- name: start hg sshd
+  command: /usr/sbin/start-hg-sshd
+  when: existing_repo.stat.exists == false

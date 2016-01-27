@@ -1,6 +1,7 @@
 #!/bin/sh
-c="sudo /src/dev/ansible/scripts/create-user"
+c="sudo /src/dev/scripts/create-user"
 for i in "$@"; do
     c="$c '$i'"
 done
+echo "connecting..."
 vagrant ssh -c "$c"

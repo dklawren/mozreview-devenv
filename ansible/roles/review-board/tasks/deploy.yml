@@ -73,7 +73,7 @@
   cron: name="run django server"
         user=reviewboard
         special_time=reboot
-        job=/home/reviewboard/start-reviewboard
+        job="/home/reviewboard/start-reviewboard {{ reviewboard_port }}"
         state=present
   when: existing_rb.stat.exists == false
 

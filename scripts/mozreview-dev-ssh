@@ -1,0 +1,72 @@
+#!/usr/bin/env python2.7
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# This script is used to establish an SSH connection to a Mercurial server
+# running in the vagrant developer environment.
+
+import json
+import os
+import sys
+
+ROOT = os.path.abspath('%s/../..' % os.path.dirname(__file__))
+STATE_FILENAME = ROOT + "/dev/env/state.json"
+
+
+def main(args):
+    if len(args) == 0:
+        raise Exception("missing email")
+    email = args[0]
+
+    # load state
+
+    if not os.path.isfile(STATE_FILENAME):
+        print("Failed to find state.json: "
+              "ensure vagrant has provisioned the vm")
+        sys.exit(1)
+    with open(STATE_FILENAME) as state_file:
+        state = json.load(state_file)
+    if 'users' not in state:
+        raise Exception("no users exist in state.json")
+    if email not in state['users']:
+        raise Exception("unknown user: %s" % email)
+
+    key_filename = ROOT + "/dev/env/keys/" + email
+    ssh_filename = ROOT + "/dev/env/keys/" + email + ".ssh"
+    username = state['users'][email]['username']
+
+    # (re)create ssh_config
+
+    config = (
+        "Host *\n"
+        "  StrictHostKeyChecking no\n"
+        "  PreferredAuthentications publickey\n"
+        "  UserKnownHostsFile " + ROOT + "/dev/env/ssh_known_hosts\n"
+        "  ForwardX11 no\n"
+        "\n"
+        "Host hgrb\n"
+        "  HostName 127.0.0.1\n"
+        "  Port " + state['ssh'] + "\n"
+        "  User " + username + "\n"
+        "  IdentityFile " + key_filename + "\n"
+    )
+    with open(ssh_filename, 'w') as ssh_file:
+        ssh_file.write(config)
+
+    # run ssh
+
+    ssh_args = [
+        'ssh',
+        '-F', ssh_filename,
+        '-i', key_filename,
+        '-l', username,
+    ] + args[1:]
+    os.execvp(ssh_args[0], ssh_args)
+
+if __name__ == '__main__':
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except Exception as e:
+        print(e)
+        sys.exit(1)

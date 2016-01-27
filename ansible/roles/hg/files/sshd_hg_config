@@ -1,0 +1,13 @@
+Port 222
+ListenAddress 0.0.0.0
+
+PasswordAuthentication no
+AuthorizedKeysFile	.ssh/authorized_keys
+
+X11Forwarding no
+UsePrivilegeSeparation sandbox
+UseDNS no
+PidFile /var/run/sshd-hg.pid
+Subsystem	sftp	/usr/libexec/openssh/sftp-server
+
+ForceCommand /usr/local/bin/pash.py

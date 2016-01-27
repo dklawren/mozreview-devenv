@@ -68,3 +68,7 @@
   service: name=httpd
            state=restarted
   when: existing_bmo.stat.exists == false
+
+- name: create test bugs
+  command: /src/dev/scripts/create-bugs 10 Firefox General
+  when: existing_bmo.stat.exists == false

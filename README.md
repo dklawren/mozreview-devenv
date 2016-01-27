@@ -17,14 +17,17 @@ non-goals:
 
 installation:
 
+- install the vagrant-triggers plugin:
+  - vagrant plugin install vagrant-triggers
 - copy the contents of this repo into a 'dev' directory under your vct checkout
   (ie. this file should be version-control-tools/dev/README.md).
 - optional: edit config.yml to set ports
 - run 'vagrant up'
 - add the following to .hgignore:
   - dev/env/
-  - dev/repo/
+  - dev/test-repo/
   - dev/venv/
+- apply the hg_helper.patch patch
 
 using:
 
@@ -43,3 +46,7 @@ within the vm:
 
 reviewboard is run using django's runserver inside a screen session owned
 by the 'reviewboard' user.
+
+starting from scratch:
+- vagrant destroy
+- rm dev/env dev/test-repo dev/venv

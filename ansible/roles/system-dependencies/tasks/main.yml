@@ -81,10 +81,23 @@
   file: path=/src/dev/env/keys
         state=directory
 
+- name: check for existing instance
+  stat: path=/bugzilla/checksetup_answers.txt
+  ignore_errors: true
+  register: existing_bmo
+
+- name: reset state
+  file: path=/src/dev/env/state.json
+        state=absent
+  when: existing_bmo.stat.exists == false
+
+# XXX nuke keys too
+
 - name: save state
   command: >
-    /src/dev/ansible/scripts/save-state
+    /src/dev/scripts/save-state
     --ip
     --reviewboard=http://localhost:{{ reviewboard_port }}/
     --bugzilla=http://localhost:{{ bugzilla_port }}/
+    --ssh={{ ssh_port }}
     /src/dev/env/state.json
