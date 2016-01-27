@@ -1,15 +1,13 @@
 ---
 
-# to ensure groups can be created in /etc/group, this must be executed before
-# pam is hooked up to ldap in the ldap role
-# that said, it remains to be seen if we need these groups :)
-
 - name: check for existing instance
   stat: path=/repo
   ignore_errors: true
   register: existing_repo
 
-- name: source code groups
+# groups, users, hgrc
+
+- name: scm groups
   group: name={{ item.name }}
          gid={{ item.gid }}
          state=present
@@ -31,6 +29,14 @@
         groups=scm_level_1,scm_level_2,scm_level_3,scm_l10n,scm_l10n_infra,scm_sec_sensitive
   when: existing_repo.stat.exists == false
 
+- name: global hgrc
+  template: src=hgrc.j2
+            dest=/etc/mercurial/hgrc
+            mode=0644
+  when: existing_repo.stat.exists == false
+
+# repo
+
 - name: create repository
   file: path=/repo/hg/mozilla
         state=directory
@@ -43,12 +49,6 @@
         state=link
   when: existing_repo.stat.exists == false
 
-- name: global hgrc
-  template: src=hgrc.j2
-            dest=/etc/mercurial/hgrc
-            mode=0644
-  when: existing_repo.stat.exists == false
-
 - name: install create-repo
   copy: src=create-repo
         dest=/usr/local/sbin/create-repo
@@ -58,6 +58,8 @@
 - name: create test-repo
   command: /usr/local/sbin/create-repo test-repo 1
   when: existing_repo.stat.exists == false
+
+# ssh
 
 - name: install pash
   copy: src=/src/hgserver/pash/{{ item }}
@@ -116,4 +118,26 @@
 
 - name: start hg sshd
   command: /usr/sbin/start-hg-sshd
+  when: existing_repo.stat.exists == false
+
+# hgweb
+
+- name: deploy vhost
+  template: src=vhost.conf.j2
+            dest=/etc/httpd/conf.d/hgweb.conf
+            mode=0644
+  when: existing_repo.stat.exists == false
+
+- name: deploy hgweb
+  file: path=/var/www/hgweb
+        state=directory
+  when: existing_repo.stat.exists == false
+
+- copy: src=hgweb.wsgi
+        dest=/var/www/hgweb/hgweb.wsgi
+  when: existing_repo.stat.exists == false
+
+- name: restart httpd
+  service: name=httpd
+           state=restarted
   when: existing_repo.stat.exists == false

@@ -61,11 +61,18 @@ def main(args):
             'ssh://hgrb/test-repo'
         ])
 
+        os.chdir('test-repo')
+        with open("foo", 'w') as foo_file:
+            foo_file.write("hello world.\n")
+        subprocess.check_call(['hg', 'commit', '-A', '-m', 'root commit'])
+        subprocess.check_call(['hg', 'phase', '--public', '-r', '.'])
+        os.chdir('..')
+
         print("adding to review board")
         subprocess.call(['pip', 'install', 'RBTools', '-q'])
 
         name = 'test-repo'
-        url = "http://localhost:8081/hg/" + name  # XXX does not work
+        url = state['hgweb']
         bug_url = state['bugzilla'] + '%sshow_bug.cgi?id=%%s'
 
         with ReviewBoardClient(state['reviewboard'],

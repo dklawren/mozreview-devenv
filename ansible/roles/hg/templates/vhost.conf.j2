@@ -1,0 +1,17 @@
+WSGISocketPrefix /var/run/wsgi
+Listen {{ hgweb_port | mandatory }}
+<VirtualHost *:{{ hgweb_port | mandatory }}>
+  ServerName hgweb
+
+  DocumentRoot "/var/www/hgweb"
+  <Directory "/var/www/hgweb">
+    Options -Indexes +FollowSymLinks
+    Require all granted
+  </Directory>
+
+  WSGIScriptAlias / "/var/www/hgweb/hgweb.wsgi/"
+
+  ServerSignature Off
+  ErrorDocument 500 /errordocs/500.html
+  LogLevel info
+</VirtualHost>

@@ -100,4 +100,5 @@
     --reviewboard=http://localhost:{{ reviewboard_port }}/
     --bugzilla=http://localhost:{{ bugzilla_port }}/
     --ssh={{ ssh_port }}
+    --hgweb=http://localhost:{{ hgweb_port }}/
     /src/dev/env/state.json
