@@ -3,12 +3,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import fcntl
 import getopt
 import json
 import os
-import socket
-import struct
 import sys
 
 
@@ -24,7 +21,7 @@ def get_ip_address(ifname):
 def main():
     try:
         opts, args = getopt.getopt(sys.argv[1:], '', [
-            'reviewboard=', 'bugzilla=', 'ssh=', 'hgweb=', 'ip'
+            'reviewboard=', 'bugzilla=', 'ssh=', 'hgweb='
         ])
         if len(args) == 0:
             raise getopt.GetoptError("missing state-file")
@@ -40,10 +37,7 @@ def main():
         state = {}
 
     for o, a in opts:
-        if o == '--ip':
-            state['ip'] = get_ip_address('eth0')
-        else:
-            state[o[2:]] = a
+        state[o[2:]] = a
 
     with open(state_filename, 'w') as state_file:
         json.dump(state, state_file, indent=2, sort_keys=True)

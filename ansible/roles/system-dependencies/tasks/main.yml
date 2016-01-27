@@ -96,7 +96,6 @@
 - name: save state
   command: >
     /src/dev/scripts/save-state
-    --ip
     --reviewboard=http://localhost:{{ reviewboard_port }}/
     --bugzilla=http://localhost:{{ bugzilla_port }}/
     --ssh={{ ssh_port }}

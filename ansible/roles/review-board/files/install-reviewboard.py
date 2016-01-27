@@ -101,18 +101,16 @@ except BugzillaUserMap.DoesNotExist:
 from djblets.extensions.models import RegisteredExtension
 mre = RegisteredExtension.objects.get(
     class_name='mozreview.extension.MozReviewExtension')
-# XXX autoland url.  add --autoland <url>
 mre.settings['autoland_import_pullrequest_ui_enabled'] = False
 mre.settings['autoland_try_ui_enabled'] = False
 mre.settings['autoland_testing'] = True
-mre.settings['autoland_url'] = 'http://localhost:8083'
+mre.settings['autoland_url'] = 'http://localhost:8084'
 mre.settings['autoland_user'] = 'autoland'
 mre.settings['autoland_password'] = 'autoland'
 # ldap runs on this host
 mre.settings['ldap_url'] = 'ldap://127.0.0.1:389'
 mre.settings['ldap_user'] = 'uid=bind-mozreview,ou=logins,dc=mozilla'
 mre.settings['ldap_password'] = 'password'
-# XXX pulse - used for bots.  add --pulse host:port opt and split
 mre.settings['enabled'] = False  # pulse-enabled
 mre.settings['pulse_host'] = None
 mre.settings['pulse_port'] = None

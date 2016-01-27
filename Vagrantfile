@@ -5,17 +5,19 @@ current_dir    = File.dirname(File.expand_path(__FILE__))
 configs        = YAML.load_file("#{current_dir}/config.yml")
 
 Vagrant.configure(2) do |config|
-  # XXX this box is untested
   config.vm.box = "puppetlabs/centos-7.2-64-nocm"
-  # XXX add providers for vmware and virtualbox
-  #config.vm.provider :virtualbox do |vb, override|
-  #config.vm.provider :vmware_workstation do |vmf, override|
-  #config.vm.provider :vmware_fusion do |vmf, override|
+  config.vm.network "private_network", type: "dhcp"
+
+  config.vm.provider "virtualbox" do |v|
+    v.name = "mozreview-dev"
+    v.memory = 1024
+    v.cpus = 2
+  end
 
   config.vm.provider :parallels do |prl, override|
     override.vm.box = "parallels/centos-7.2"
-    prl.name = "mozreview-dev"
     prl.update_guest_tools = true
+    prl.name = "mozreview-dev"
     prl.memory = 1024
     prl.cpus = 2
   end

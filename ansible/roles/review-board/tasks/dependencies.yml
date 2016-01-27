@@ -23,7 +23,6 @@
     - pylib/mozreview
     - pylib/rbbz
     - pylib/rbmotd
-# XXX may need to use easy_install as per docker-rbweb
 # XXX custom pygments (mozreview-virtualenv)
 
 - name: install node packages
