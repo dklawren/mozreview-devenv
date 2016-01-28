@@ -29,6 +29,20 @@
         mode=0755
   when: existing_rb.stat.exists == false
 
+- name: configure logging
+  file: path=/var/log/reviewboard
+        state=directory
+        owner=reviewboard
+        group=reviewboard
+        mode=0755
+  when: existing_rb.stat.exists == false
+
+- name: configure log rotation
+  copy: src=logrotate
+        dest=/etc/logrotate.d/reviewboard
+        mode=0644
+  when: existing_rb.stat.exists == false
+
 - name: configure review board
   command: >
     "{{ venv }}/bin/python" /reviewboard/install-reviewboard.py

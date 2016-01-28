@@ -83,6 +83,9 @@ from djblets.siteconfig.models import SiteConfiguration
 sc = SiteConfiguration.objects.get_current()
 sc.set('auth_backend', 'bugzilla')
 sc.set('auth_bz_xmlrpc_url', 'http://localhost:%s/xmlrpc.cgi' % bugzilla_port)
+sc.set('logging_enabled', True)
+sc.set('logging_directory', '/var/log/reviewboard')
+sc.set('logging_level', 'INFO')
 sc.save()
 
 # ensure admin user is hooked up to bugzilla

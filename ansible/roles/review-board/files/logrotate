@@ -1,0 +1,6 @@
+/var/log/reviewboard/*log {
+    missingok
+    notifempty
+    delaycompress
+    nocreate
+}
