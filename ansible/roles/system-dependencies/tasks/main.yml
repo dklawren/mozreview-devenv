@@ -46,6 +46,9 @@
   command: setenforce 0
   when: selinux_enabled|success
 
+- name: disable iptables
+  command: iptables -F
+
 - name: upgrade mercurial
   pip: name=mercurial
        state=latest
