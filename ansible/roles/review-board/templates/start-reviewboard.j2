@@ -3,12 +3,8 @@ if [[ ! -e /venv/bin/rb-site ]]; then
     echo "environment not provisioned"
     exit
 fi
-if [[ "$1" == "" ]]; then
-    echo "missing port"
-    exit
-fi
 if screen -list | grep -q django; then
     echo "django screen session is already running"
     exit
 fi
-screen -dmS django /venv/bin/python /venv/bin/rb-site manage /reviewboard -- runserver 0.0.0.0:$1
+screen -dmS django /venv/bin/python /venv/bin/rb-site manage /reviewboard -- runserver 0.0.0.0:{{ reviewboard_port | mandatory }}

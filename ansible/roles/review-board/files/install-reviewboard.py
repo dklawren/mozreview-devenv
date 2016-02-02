@@ -32,28 +32,35 @@ with open('%s/conf/settings_local.py' % ROOT, 'wb') as fh:
     # We would ideally set logging_directory via site config, but Djblets
     # isn't allowing us to set a string value to a None type. Derp.
     log_directory_found = False
-    log_production_found = False
+    production_found = False
+    extra_apps_found = False
     for line in lines:
         if line.startswith(b'ALLOWED_HOSTS'):
             line = b'ALLOWED_HOSTS = ["*"]\n'
         elif line.startswith(b'PRODUCTION'):
             line = b'PRODUCTION = False\n'
-            log_production_found = True
+            production_found = True
         elif line.startswith(b'DEBUG ='):
             line = b'DEBUG = True\n'
         elif line.startswith(b'LOGGING_DIRECTORY'):
-            line = b'LOGGING_DIRECTORY = "/var/log/httpd"\n'
+            line = b'LOGGING_DIRECTORY = "/var/log/reviewboard"\n'
             log_directory_found = True
+        elif line.startswith(b'EXTRA_APPS'):
+            line = b'RB_EXTRA_APPS = ["django_extensions"]\n'
+            extra_apps_found = True
         fh.write(line)
     if not log_directory_found:
-        fh.write('LOGGING_DIRECTORY = "/var/log/httpd"\n')
-    if not log_production_found:
+        fh.write('LOGGING_DIRECTORY = "/var/log/reviewboard"\n')
+    if not production_found:
         fh.write('PRODUCTION = False\n')
+    if not extra_apps_found:
+        fh.write('RB_EXTRA_APPS = ["django_extensions"]\n')
 
 
 class FakeOptions(object):
     copy_media = False
 
+print('initialising review board')
 from reviewboard.cmdline.rbsite import Site
 site = Site(ROOT, FakeOptions())
 site.run_manage_command('syncdb', ['--noinput'])
@@ -61,22 +68,19 @@ site.setup_settings()
 from reviewboard import initialize
 initialize()
 
-# toggle disable/enable to get first run code to run
-print('disabling extensions')
-site.run_manage_command(
-    'disable-extension', ['mozreview.extension.MozReviewExtension'])
-site.run_manage_command(
-    'disable-extension', ['rbbz.extension.BugzillaExtension'])
-site.run_manage_command(
-    'disable-extension', ['rbmotd.extension.MotdExtension'])
-
-print('enabling extensions')
-site.run_manage_command(
-    'enable-extension', ['mozreview.extension.MozReviewExtension'])
-site.run_manage_command(
-    'enable-extension', ['rbbz.extension.BugzillaExtension'])
-site.run_manage_command(
-    'enable-extension', ['rbmotd.extension.MotdExtension'])
+# we need to toggle disable/enable state to get first run code to run
+site.run_manage_command('disable-extension',
+                        ['mozreview.extension.MozReviewExtension'])
+site.run_manage_command('disable-extension',
+                        ['rbbz.extension.BugzillaExtension'])
+site.run_manage_command('disable-extension',
+                        ['rbmotd.extension.MotdExtension'])
+site.run_manage_command('enable-extension',
+                        ['mozreview.extension.MozReviewExtension'])
+site.run_manage_command('enable-extension',
+                        ['rbbz.extension.BugzillaExtension'])
+site.run_manage_command('enable-extension',
+                        ['rbmotd.extension.MotdExtension'])
 
 print('configuring review board')
 from djblets.siteconfig.models import SiteConfiguration
@@ -97,8 +101,7 @@ u.save()
 try:
     BugzillaUserMap.objects.get(bugzilla_user_id=1)
 except BugzillaUserMap.DoesNotExist:
-    bum = BugzillaUserMap(user=u, bugzilla_user_id=1)
-    bum.save()
+    BugzillaUserMap(user=u, bugzilla_user_id=1).save()
 
 # configure mozreview
 from djblets.extensions.models import RegisteredExtension

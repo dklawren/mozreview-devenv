@@ -50,8 +50,7 @@ if you need to restart the development reviewboard server:
 - [reviewboard@mozreview-dev ~]$ screen -r django
 - (Ctrl+C)
 - [screen is terminating]
-- [reviewboard@mozreview-dev ~]$ ./start-reviewboard 8080
-  - replace 8080 with your configured reviewboard port
+- [reviewboard@mozreview-dev ~]$ ./start-reviewboard
 
 directory structure within the vm:
 - /src : nfs mount of your vct directory

@@ -76,11 +76,11 @@
   command: sed -i 's/less = {$/less = { logLevel:0,/' /venv/lib/python2.7/site-packages/reviewboard/templates/js/pipeline.html
 
 - name: install server wrapper
-  copy: src=start-reviewboard
-        dest=/home/reviewboard/start-reviewboard
-        owner=reviewboard
-        group=reviewboard
-        mode=0755
+  template: src=start-reviewboard.j2
+            dest=/home/reviewboard/start-reviewboard
+            owner=reviewboard
+            group=reviewboard
+            mode=0755
   when: existing_rb.stat.exists == false
 
 - name: install startup script
