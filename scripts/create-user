@@ -160,7 +160,7 @@ def main(args):
         l.delete_s('mail=%s,o=com,dc=mozilla' % email)
     except ldap.NO_SUCH_OBJECT:
         pass
-    for level in range(1, 3):
+    for level in (1, 2, 3):
         modlist = [(ldap.MOD_DELETE, b'memberUid', email)]
         try:
             l.modify_s('cn=scm_level_%s,ou=groups,dc=mozilla' % level, modlist)

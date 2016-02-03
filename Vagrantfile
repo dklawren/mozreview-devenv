@@ -43,11 +43,8 @@ Vagrant.configure(2) do |config|
 
   config.trigger.after [:up, :provision] do
     unless File.exist?('test-repo')
-      run "./create-user default@example.com password default 'Default User' 3"
-      run "./create-user level0@example.com password level0 'Level 0 User' 0"
-      run "./create-user level1@example.com password level1 'Level 1 User' 1"
-      run "./create-user level2@example.com password level2 'Level 2 User' 2"
-      run "./create-user level3@example.com password level3 'Level 3 User' 3"
+      info "creating default users"
+      run_remote "sh /src/dev/scripts/create-default-users >/dev/null"
       run "./scripts/create-test-repo"
     end
     info "-=-=-=-=-=-=-"

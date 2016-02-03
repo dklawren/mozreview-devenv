@@ -73,7 +73,7 @@ def main(args):
 
         name = 'test-repo'
         url = state['hgweb']
-        bug_url = state['bugzilla'] + '%sshow_bug.cgi?id=%%s'
+        bug_url = state['bugzilla'] + 'show_bug.cgi?id=%s'
 
         with ReviewBoardClient(state['reviewboard'],
                                REVIEWBOARD_USER, REVIEWBOARD_PASS) as c:

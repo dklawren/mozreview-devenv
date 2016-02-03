@@ -1,0 +1,6 @@
+#!/bin/sh
+/src/dev/scripts/create-user default@example.com password default 'Default User' 3
+/src/dev/scripts/create-user level0@example.com password level0 'Level 0 User' 0
+/src/dev/scripts/create-user level1@example.com password level1 'Level 1 User' 1
+/src/dev/scripts/create-user level2@example.com password level2 'Level 2 User' 2
+/src/dev/scripts/create-user level3@example.com password level3 'Level 3 User' 3
