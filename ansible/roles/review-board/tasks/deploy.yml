@@ -23,12 +23,6 @@
     /reviewboard
   when: existing_rb.stat.exists == false
 
-- name: install review board installation script
-  copy: src=install-reviewboard.py
-        dest=/reviewboard/install-reviewboard.py
-        mode=0755
-  when: existing_rb.stat.exists == false
-
 - name: configure logging
   file: path=/var/log/reviewboard
         state=directory
@@ -43,11 +37,16 @@
         mode=0644
   when: existing_rb.stat.exists == false
 
+# always update and run the install script to ensure settings are up to date
+- name: install review board installation script
+  copy: src=install-reviewboard.py
+        dest=/reviewboard/install-reviewboard.py
+        mode=0755
+
 - name: configure review board
   command: >
     "{{ venv }}/bin/python" /reviewboard/install-reviewboard.py
     --bugzilla_port={{ bugzilla_port }}
-  when: existing_rb.stat.exists == false
 
 - name: install extension media
   command: "{{ venv }}/bin/rb-site manage /reviewboard install-extension-media -- --force"

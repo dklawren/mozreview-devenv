@@ -3,6 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import getopt
+import json
 import os
 import subprocess
 import sys
@@ -85,12 +86,16 @@ site.run_manage_command('enable-extension',
 print('configuring review board')
 from djblets.siteconfig.models import SiteConfiguration
 sc = SiteConfiguration.objects.get_current()
-sc.set('auth_backend', 'bugzilla')
-sc.set('auth_bz_xmlrpc_url', 'http://localhost:%s/xmlrpc.cgi' % bugzilla_port)
-sc.set('logging_enabled', True)
-sc.set('logging_directory', '/var/log/reviewboard')
-sc.set('logging_level', 'INFO')
-sc.save()
+is_new_install = sc.get('auth_backend') != 'bugzilla'
+
+if is_new_install:
+    sc.set('auth_backend', 'bugzilla')
+    sc.set('auth_bz_xmlrpc_url',
+           'http://localhost:%s/xmlrpc.cgi' % bugzilla_port)
+    sc.set('logging_enabled', True)
+    sc.set('logging_directory', '/var/log/reviewboard')
+    sc.set('logging_level', 'INFO')
+    sc.save()
 
 # ensure admin user is hooked up to bugzilla
 from django.contrib.auth.models import User
@@ -103,26 +108,37 @@ try:
 except BugzillaUserMap.DoesNotExist:
     BugzillaUserMap(user=u, bugzilla_user_id=1).save()
 
+# create the privileged account
+if not User.objects.filter(username='mozreview').exists():
+    from django.contrib.auth.models import Permission
+    verify_perm = Permission.objects.get(codename='verify_diffset')
+    ldap_perm = Permission.objects.get(codename='modify_ldap_association')
+    u = User.objects.create_user(username='mozreview', password='password')
+    u.user_permissions.add(verify_perm)
+    u.user_permissions.add(ldap_perm)
+
 # configure mozreview
-from djblets.extensions.models import RegisteredExtension
-mre = RegisteredExtension.objects.get(
-    class_name='mozreview.extension.MozReviewExtension')
-mre.settings['autoland_import_pullrequest_ui_enabled'] = False
-mre.settings['autoland_try_ui_enabled'] = False
-mre.settings['autoland_testing'] = True
-mre.settings['autoland_url'] = 'http://localhost:8084'
-mre.settings['autoland_user'] = 'autoland'
-mre.settings['autoland_password'] = 'autoland'
-# ldap runs on this host
-mre.settings['ldap_url'] = 'ldap://127.0.0.1:389'
-mre.settings['ldap_user'] = 'uid=bind-mozreview,ou=logins,dc=mozilla'
-mre.settings['ldap_password'] = 'password'
-mre.settings['enabled'] = False  # pulse-enabled
-mre.settings['pulse_host'] = None
-mre.settings['pulse_port'] = None
-mre.settings['pulse_ssl'] = False
-mre.settings['pulse_user'] = 'guest'
-mre.settings['pulse_password'] = 'guest'
-mre.save()
+settings_file = '/mozreview-settings.json'
+if not os.path.exists(settings_file):
+    settings = {}
+    settings['autoland_import_pullrequest_ui_enabled'] = False
+    settings['autoland_try_ui_enabled'] = False
+    settings['autoland_testing'] = True
+    settings['autoland_url'] = 'http://localhost:8084'
+    settings['autoland_user'] = 'autoland'
+    settings['autoland_password'] = 'autoland'
+    settings['ldap_url'] = 'ldap://127.0.0.1:389'
+    settings['ldap_user'] = 'uid=bind-mozreview,ou=logins,dc=mozilla'
+    settings['ldap_password'] = 'password'
+    settings['enabled'] = False  # pulse-enabled
+    settings['pulse_host'] = None
+    settings['pulse_port'] = None
+    settings['pulse_ssl'] = False
+    settings['pulse_user'] = 'guest'
+    settings['pulse_password'] = 'guest'
+    with open(settings_file, 'w') as f:
+        json.dump(settings, f, sort_keys=True)
+    subprocess.check_call(['/bin/chown', 'reviewboard:reviewboard',
+                           settings_file])
 
 subprocess.check_call(['/bin/chown', '-R', 'reviewboard:reviewboard', ROOT])

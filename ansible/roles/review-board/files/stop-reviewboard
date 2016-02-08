@@ -1,0 +1,4 @@
+#!/bin/sh
+if screen -list | grep -q django; then
+    kill $(ps x | grep runserver | grep -v grep | awk '{ print $1 }')
+fi
